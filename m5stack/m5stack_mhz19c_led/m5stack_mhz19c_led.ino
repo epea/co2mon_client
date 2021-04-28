@@ -10,6 +10,13 @@
 
 MHZ19_uart mhz19;
 
+/*
+ * 濃度警告の閾値と切り替えフラグ
+ * 以上じゃなくて「大なり」判定
+ */
+#define CO2_WARNING_PPM 1000
+bool _warnFlg = false;
+
 void setup(){
   M5.begin();
   M5.Lcd.setTextSize(5);
@@ -28,6 +35,8 @@ void setup(){
 
   delay(2000);
   pinMode(LED_PIN, OUTPUT);
+
+  xTaskCreatePinnedToCore(ledControlTask, "ledControlTask", 1024, NULL, 0, NULL, 0);
 }
 
 int count = 0;
@@ -38,11 +47,10 @@ void loop()
     co2 = mhz19.getCO2PPM();
     displayCo2(co2);
     writeJson(co2);
-    digitalWrite(LED_PIN,HIGH);
+    _warnFlg = (co2 > CO2_WARNING_PPM);
     m5.update();
   } else {
      M5.Lcd.print(".");
-     digitalWrite(LED_PIN,LOW);
      m5.update();
   }
   count++;
@@ -62,4 +70,26 @@ void writeJson(int co2){
   json["CO2"] = co2;
   serializeJson(json, Serial);
   Serial.println();
+}
+
+void ledControlTask(void *pvParameters)
+{
+    while (1) {
+      ledWarning(_warnFlg);
+    }
+}
+
+void ledWarning(bool _warnFlg)
+{
+  if( _warnFlg ){
+    for(int i=0;i<10;i++){
+          digitalWrite(LED_PIN,HIGH);
+          delay(250);
+          digitalWrite(LED_PIN,LOW);
+          delay(250);
+    }
+  } else {
+    digitalWrite(LED_PIN,LOW);
+    delay(5000);
+  }
 }
