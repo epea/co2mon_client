@@ -43,15 +43,22 @@ int count = 0;
 int co2 = 0;
 void loop()
 {
+  M5.update();
+  if (M5.BtnA.wasPressed()) {
+    M5.Lcd.printf("BtnA pressed!");
+  } else {
+    doNormalProcess();
+  }
+}
+
+void doNormalProcess(){
   if ((count % INTERVAL) == 0 ) {
     co2 = mhz19.getCO2PPM();
     displayCo2(co2);
     writeJson(co2);
     _warnFlg = (co2 > CO2_WARNING_PPM);
-    m5.update();
   } else {
      M5.Lcd.print(".");
-     m5.update();
   }
   count++;
   delay(1000);
