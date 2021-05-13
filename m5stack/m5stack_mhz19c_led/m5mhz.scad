@@ -11,7 +11,7 @@ module m4_3d(height){
 }
 
 module m3head_3d(){
-    cylinder(h=3,d=7,$fn=20);
+    cylinder(h=5,d=7,$fn=20);
 }
 
 module m2_3d(height){
@@ -37,8 +37,10 @@ module r_courner_3d(height,r_outer,width){
 }
 
 base_width = 94;
-base_height = 62;
+base_height = 65;
 courner_r = 5;
+
+mhz_case_hole_y = 55;
 
 module bottom_base(){
     union(){
@@ -66,8 +68,8 @@ module bottom(){
         translate([89,43]) m3();
         
         // MHZ
-        translate([69,52]) m3();
-        translate([84,52]) m3();
+        translate([69,mhz_case_hole_y]) m3();
+        translate([84,mhz_case_hole_y]) m3();
         translate([69,2]) square([10,2]);
        
         // m5stack
@@ -75,23 +77,23 @@ module bottom(){
         translate([49,5]) m3();
 
         // LED
-        translate([45,5+37+16]) m3();
-        translate([10,5+37+16]) m3();
+        translate([45,5+37+16+3]) m3();
+        translate([10,5+37+16+3]) m3();
 
     }
 }
 
-//bottom();
+bottom();
 
-mhz_case_height = 17;
+mhz_case_height = 19;
 module mhz_case_base(){
     union(){
         difference(){
-            cube([37+2,25+37,mhz_case_height]);
-            translate([37+2 -courner_r,25+37-courner_r,0]) cube([courner_r,courner_r,mhz_case_height]);
-            translate([0,4,0]) cube([37,56,mhz_case_height-1]);
+            cube([37+2,65,mhz_case_height]);
+            translate([37+2 -courner_r,65-courner_r,0]) cube([courner_r,courner_r,mhz_case_height]);
+            translate([0,4,0]) cube([37,59,mhz_case_height-1]);
         }
-        translate([37+2 -courner_r,25+37-courner_r,0]) r_courner_3d(mhz_case_height,courner_r,2);
+        translate([37+2 -courner_r,65-courner_r,0]) r_courner_3d(mhz_case_height,courner_r,2);
     }
 }
 
@@ -101,8 +103,8 @@ module mhz_case(){
         difference(){
             mhz_case_base();
             
-            translate([14,52,0]) m3_3d(mhz_case_height);
-            translate([29,52,0]) m3_3d(mhz_case_height);
+            translate([14,mhz_case_hole_y,0]) m3_3d(mhz_case_height);
+            translate([29,mhz_case_hole_y,0]) m3_3d(mhz_case_height);
             
             for ( y = [12 : 10:47] ){
                 translate([10,y,0]) m2_3d(mhz_case_height);
@@ -117,22 +119,24 @@ module mhz_case(){
                 translate([37,y,3]) cube([2,1,mhz_case_height-5]);
             }
         }
-        translate([14,52,0]) m3_mount(mhz_case_height);
-        translate([29,52,0]) m3_mount(mhz_case_height);
-        translate([0,53,0]) cube([2,8,mhz_case_height]);
+        translate([14,mhz_case_hole_y,0]) m3_mount(mhz_case_height);
+        translate([29,mhz_case_hole_y,0]) m3_mount(mhz_case_height);
+        translate([0,53,0]) cube([2,11,mhz_case_height]);
         translate([14.1,2.1,-2]) cube([9.8,1.8,2.5]);
     }
-        translate([14,5+37+10,mhz_case_height-2]) m3head_3d();
-        translate([29,5+37+10,mhz_case_height-2]) m3head_3d();
+        translate([14,mhz_case_hole_y,mhz_case_height-5]) m3head_3d();
+        translate([29,mhz_case_hole_y,mhz_case_height-5]) m3head_3d();
     }
 }
-//color([0,0,0]) translate([55,0]) mhz_case();
+color([0,0,0]) translate([55,0]) mhz_case();
 
 led_case_height = mhz_case_height;
 module led_case_base(){
     union(){
         difference(){
             cube([54,13,led_case_height]);
+            translate([2,0,0])cube([50,2,led_case_height]);
+            translate([1,0,0])cube([52,1,led_case_height]);
             translate([1,0,0]) cube([52,12,led_case_height-1]);
             translate([0,13-courner_r,0]) cube([courner_r,courner_r,led_case_height]);
         }
@@ -152,14 +156,16 @@ module led_case(){
                 translate([10,8,0]) m3_3d(led_case_height);
                 translate([45,8,0]) m3_3d(led_case_height);
             
-                translate([29,10,0]) m4_3d(led_case_height);
+                translate([29,15,8]) rotate([90,0,0])  m4_3d(led_case_height);
             }
+            
+            
             translate([10,8,0]) m3_mount(led_case_height);
             translate([45,8,0]) m3_mount(led_case_height);
         }
         
-        translate([10,8,led_case_height-2]) m3head_3d();
-        translate([45,8,led_case_height-2]) m3head_3d();
+        translate([10,8,led_case_height-5]) m3head_3d();
+        translate([45,8,led_case_height-5]) m3head_3d();
     }
 }
-color([0.5,0.5,0.5]) translate([0,49])led_case();
+color([0.5,0.5,0.5]) translate([0,52])led_case();
