@@ -1,4 +1,6 @@
 #include <M5Stack.h>
+#include <BluetoothSerial.h>
+
 #include <MHZ19_uart.h>
 #include <ArduinoJson.h>
 
@@ -17,10 +19,17 @@ MHZ19_uart mhz19;
 #define CO2_WARNING_PPM 1000
 bool _warnFlg = false;
 
+// BLE送信
+bool _bleFlg = false;
+BluetoothSerial SerialBT;
+
 void setup()
 {
   M5.begin();
-  M5.Lcd.setTextSize(5);
+  M5.Lcd.setBrightness(200);
+  M5.Lcd.fillScreen(WHITE);
+  M5.Lcd.setTextColor(BLACK, WHITE);
+  M5.Lcd.setTextSize(15);
   M5.Lcd.print("start");
 
   Serial.begin(9600);
@@ -43,6 +52,19 @@ void setup()
   pinMode(LED_PIN, OUTPUT);
 
   xTaskCreatePinnedToCore(ledControlTask, "ledControlTask", 1024, NULL, 0, NULL, 0);
+
+  M5.update();
+  if (M5.BtnA.isPressed())
+  {
+    M5.Lcd.fillScreen(WHITE);
+    M5.Lcd.setTextColor(BLACK, WHITE);
+    M5.Lcd.setTextSize(15);
+    M5.Lcd.setCursor(10, 10);
+    M5.Lcd.print("BLE Start");
+    _bleFlg = true;
+    SerialBT.begin("CO2Sensor");
+    delay(1000);
+  }
 }
 
 int count = 0;
@@ -80,6 +102,10 @@ void doNormalProcess()
     displayCo2(co2);
     writeJson(co2);
     _warnFlg = (co2 > CO2_WARNING_PPM);
+
+    if(_bleFlg){
+      SerialBT.println(co2);
+    }
   }
   else
   {
@@ -92,7 +118,10 @@ void doNormalProcess()
 void displayCo2(int co2)
 {
   M5.Lcd.clear();
-  M5.Lcd.setCursor(0, 0);
+  M5.Lcd.fillScreen(WHITE);
+  M5.Lcd.setCursor(10, 10);
+  M5.Lcd.setTextColor(BLACK, WHITE);
+  M5.Lcd.setTextSize(15);
   M5.Lcd.println("CO2 ppm");
   M5.Lcd.print(co2);
 }
