@@ -1,8 +1,13 @@
 #include <M5Stack.h>
-#include <WiFi.h>
-#include <BluetoothSerial.h>
 
 #include <MHZ19_uart.h>
+
+#include <BluetoothSerial.h>
+
+#include <WiFi.h>
+#include <WebServer.h>
+#include <esp_wifi.h>
+
 #include <ArduinoJson.h>
 
 #define RX 16
@@ -22,6 +27,8 @@ bool _warnFlg = false;
 
 // wifi起動フラグ
 bool _wifiFlg = false;
+WebServer server(80);
+String serverResponse;
 
 // BLE送信フラグ
 bool _bleFlg = false;
@@ -46,7 +53,7 @@ void setup()
   delay(2000);
   // LED用スレッド起動
   pinMode(LED_PIN, OUTPUT);
-  xTaskCreatePinnedToCore(ledControlTask, "ledControlTask", 1024, NULL, 0, NULL, 0);
+  xTaskCreatePinnedToCore(ledControlTask, "ledControlTask", 1024, NULL, 0, NULL, 1);
 
   // MHZ起動
   mhzBegin();
@@ -69,8 +76,8 @@ void doSettingProcess() {
 
 
 void startWifi() {
-  Serial.println("Wifi Start");
-  displayLCD("Wifi Start");
+  Serial.println("Wifi Starting");
+  displayLCD("Wifi Starting");
   _wifiFlg = true;
 
   connectWifi(10000, false);
@@ -78,7 +85,7 @@ void startWifi() {
   Serial.println("");
 
   if ( WiFi.status() != WL_CONNECTED ) {
-    WiFi.mode(WIFI_STA);
+    WiFi.mode(WIFI_AP_STA);
     WiFi.beginSmartConfig();
     Serial.println("Waiting for SmartConfig");
     while (!WiFi.smartConfigDone()) {
@@ -90,15 +97,21 @@ void startWifi() {
         ESP.restart();
       }
     }
-
-    connectWifi(60000, true);
-
+    Serial.println("SmartConfig received.");
+    Serial.println("Waiting for WiFi");
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+    }
+    // 接続成功
+    Serial.println("WiFi Connected.");
+    displayWifi();
   }
 }
 
-
-
 void connectWifi(long waitTime, bool shouldConnect) {
+  esp_wifi_disconnect();
+  Serial.println("connectWifi");
   WiFi.begin();
 
   long processStartTime = millis();
@@ -120,16 +133,44 @@ void connectWifi(long waitTime, bool shouldConnect) {
   }
 
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("");
-    Serial.println("WiFi Connected.");
-    Serial.print("IP Address: ");
-    Serial.println(WiFi.localIP());
+    displayWifi();
+    startServer();
   }
 }
 
+void displayWifi() {
+  Serial.println("");
+  Serial.println("WiFi Connected.");
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+
+  displayLCD(ipAddress2String(WiFi.localIP()));
+  delay(15000);
+}
+
+void startServer() {
+  Serial.println("start api server");
+  server.on("/", handleAPI);
+  server.begin();
+}
+
+void handleAPI() {
+  Serial.println("handleAPI");
+  server.send(200, "application/json", serverResponse);
+}
+
+
+String ipAddress2String(const IPAddress& ipAddress)
+{
+  return String(ipAddress[0]) + String(".") + \
+         String(ipAddress[1]) + String(".") + \
+         String(ipAddress[2]) + String(".") + \
+         String(ipAddress[3])  ;
+}
+
 void startBLE() {
-  Serial.println("BLE Start");
-  displayLCD("BLE Start");
+  Serial.println("BLE Starting");
+  displayLCD("BLE Starting");
   _bleFlg = true;
   SerialBT.begin("CO2Sensor");
 }
@@ -157,6 +198,8 @@ int co2 = 0;
 bool inCaribrationProcess = false;
 void loop()
 {
+  if (_wifiFlg) server.handleClient();
+
   M5.update();
   // A,C両ボタン長押しでキャリブレーション
   if (M5.BtnA.pressedFor(1000) && M5.BtnB.releasedFor(1000) && M5.BtnC.pressedFor(1000))
@@ -182,11 +225,18 @@ void doNormalProcess()
   {
     co2 = mhz19.getCO2PPM();
     displayCo2(co2);
-    writeJson(co2);
+    String json = toJson(co2);
+
+    Serial.println(json);
+
+
     _warnFlg = (co2 > CO2_WARNING_PPM);
 
     if (_bleFlg) {
       SerialBT.println(co2);
+    }
+    if ( _wifiFlg ) {
+      serverResponse = json;
     }
   }
   else
@@ -217,13 +267,14 @@ void displayCo2(int co2)
   M5.Lcd.print(co2);
 }
 
-void writeJson(int co2)
+String toJson(int co2)
 {
+  String result;
   const int capacity = JSON_OBJECT_SIZE(1);
   StaticJsonDocument<capacity> json;
   json["CO2"] = co2;
-  serializeJson(json, Serial);
-  Serial.println();
+  serializeJson(json, result);
+  return result;
 }
 
 void ledControlTask(void *pvParameters)
