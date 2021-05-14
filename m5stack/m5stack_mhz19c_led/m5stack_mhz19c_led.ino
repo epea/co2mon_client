@@ -27,10 +27,7 @@ void setup()
 {
   M5.begin();
   M5.Lcd.setBrightness(200);
-  M5.Lcd.fillScreen(WHITE);
-  M5.Lcd.setTextColor(BLACK, WHITE);
-  M5.Lcd.setTextSize(15);
-  M5.Lcd.print("start");
+  displayLCD("Start");
 
   Serial.begin(9600);
   /*
@@ -54,17 +51,19 @@ void setup()
   xTaskCreatePinnedToCore(ledControlTask, "ledControlTask", 1024, NULL, 0, NULL, 0);
 
   M5.update();
-  if (M5.BtnA.isPressed())
+  
+  if (M5.BtnB.isPressed())
   {
-    M5.Lcd.fillScreen(WHITE);
-    M5.Lcd.setTextColor(BLACK, WHITE);
-    M5.Lcd.setTextSize(15);
-    M5.Lcd.setCursor(10, 10);
-    M5.Lcd.print("BLE Start");
-    _bleFlg = true;
-    SerialBT.begin("CO2Sensor");
+    doBLEStart();
     delay(1000);
   }
+}
+
+
+void doBLEStart(){
+  displayLCD("BLE Start");
+    _bleFlg = true;
+    SerialBT.begin("CO2Sensor");
 }
 
 int count = 0;
@@ -80,11 +79,8 @@ void loop()
       delay(5000);
     } else {
       inCaribrationProcess = true;
-      M5.Lcd.clear();
       mhz19.calibrateZero();
-      M5.Lcd.setCursor(0, 0);
-      M5.Lcd.println("finish");
-      M5.Lcd.println("calibration");
+      displayLCD("finish calibration");
     }
   }
   else
@@ -113,6 +109,15 @@ void doNormalProcess()
   }
   count++;
   delay(1000);
+}
+
+void displayLCD(String message){
+  M5.Lcd.clear();
+  M5.Lcd.fillScreen(WHITE);
+  M5.Lcd.setCursor(10, 10);
+  M5.Lcd.setTextColor(BLACK, WHITE);
+  M5.Lcd.setTextSize(15);
+  M5.Lcd.print(message);
 }
 
 void displayCo2(int co2)
