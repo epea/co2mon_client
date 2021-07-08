@@ -13,16 +13,14 @@
 #define YELLOW_PIN 11
 #define RED_PIN 10
 
-
-
 Adafruit_SH1106 display(-1);
 
 MHZ19_uart mhz19;
 
-
 void setup()
 {
   Serial.begin(115200);
+  Serial.println("Start");
   checkLED(1000);
   
   Wire.begin();
@@ -67,7 +65,7 @@ void loop()
     co2 = mhz19.getCO2PPM();
 
     char buff[9];
-    sprintf(buff, "{CO2:%d}", co2);
+    sprintf(buff, "{\"CO2\":%d}", co2);
     Serial.println(buff);
   }
 
@@ -109,7 +107,6 @@ void displayCo2(int co2, bool isPiriod) {
     display.println("");
   }
   display.println("");
-
 
   display.setTextSize(5);
   char buff[4];
