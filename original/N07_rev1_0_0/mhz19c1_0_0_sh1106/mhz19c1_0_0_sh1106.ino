@@ -108,7 +108,8 @@ void displayCo2(int co2, bool isPiriod) {
   } else {
     display.println("");
   }
-  display.println("");
+  display.setTextSize(1);
+  display.setCursor(0,24);
 
   display.setTextSize(5);
   char buff[4];
