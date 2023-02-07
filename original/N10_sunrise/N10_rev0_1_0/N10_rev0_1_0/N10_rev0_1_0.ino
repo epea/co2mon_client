@@ -15,7 +15,7 @@ void setup() {
   Wire.setSDA(16);
   Wire.setSCL(17);
   Wire.begin();                // join i2c bus (address optional for master)
-  Serial.begin(9600);          // start serial communication at 9600bps
+  Serial.begin(115200);          // start serial communication at 9600bps
 
   display.begin(DISPLAY_ADDRESS, true);
   display.setTextColor(SH110X_WHITE);
@@ -28,25 +28,27 @@ int reading = 0;
 float temp=0;
 
 void loop() {
-  // step 1: wake sensor
+  Serial.println("wake sensor");
   Wire.beginTransmission(byte(0x68)); // transmit to device 0x68=104
   Wire.endTransmission();      // stop transmitting
 
   delay(5);       //max 15ms            
 
-  // step 3: instruct sensor to return a particular echo reading
+  Serial.println("instruct sensor to return a particular echo reading");
   Wire.beginTransmission(byte(0x68)); // transmit to device #104
   Wire.write(byte(0x06));      // sets register pointer to echo #1 register (0x06)
   Wire.endTransmission();      // stop transmitting
 
-  // step 4: request reading from sensor
+  Serial.println("request reading from sensor");
   Wire.requestFrom(byte(0x68), 2);    // request 2 bytes from slave device #104
 
-  // step 5: receive reading CO2 from sensor
-  if (2 <= Wire.available()) { // if two bytes were received
+  Serial.println("receive reading CO2 from sensor");
+  if (2 <= Wire.available()) {
+    Serial.println("two bytes were received");
     reading = Wire.read();    // receive high byte (overwrites previous reading)
     reading = reading << 8;    // shift high byte to be high 8 bits
     reading |= Wire.read();   // receive low byte as lower 8 bits
+    Serial.println(reading);
     displayCo2(reading);
     Serial.print(reading);   // print the reading
     Serial.println(" CO2");
